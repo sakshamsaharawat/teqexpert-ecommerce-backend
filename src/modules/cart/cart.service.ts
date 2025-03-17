@@ -14,7 +14,22 @@ export class CartService {
 
     async findAll(user: CurrentUserType): Promise<{ success: boolean, message: string, data: Cart[] }> {
         const user_id = new mongoose.Types.ObjectId(user.id);
-        const cart = await this.cartModel.find({ user_id, is_deleted: false });
+        const cart = await this.cartModel.aggregate([
+            {
+                $match: { user_id, is_deleted: false }
+            },
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "product_id",
+                    foreignField: "_id",
+                    as: "product"
+                }
+            },
+            {
+                $unwind: "$product"
+            }
+        ]);
         return { success: true, message: cart.length ? "Cart fetched successfully." : "Cart not found", data: cart };
     }
 
